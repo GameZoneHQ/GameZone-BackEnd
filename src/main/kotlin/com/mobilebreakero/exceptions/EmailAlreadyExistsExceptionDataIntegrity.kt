@@ -1,0 +1,5 @@
+package com.mobilebreakero.exceptions
+
+import org.springframework.dao.DataIntegrityViolationException
+
+class EmailAlreadyExistsExceptionDataIntegrity(message: String) : DataIntegrityViolationException(message)
