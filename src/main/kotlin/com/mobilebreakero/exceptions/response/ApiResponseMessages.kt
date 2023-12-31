@@ -1,11 +1,5 @@
-package com.mobilebreakero.response
+package com.mobilebreakero.exceptions.response
 
-import org.springframework.http.HttpStatus
-
-sealed class ApiResponse<T>(val message: String, val status: HttpStatus) {
-    class Success<T>(val data: T) : ApiResponse<T>("Success", HttpStatus.OK)
-    class Error<T>(message: String, status: HttpStatus) : ApiResponse<T>(message, status)
-}
 
 object ApiResponseMessages {
     val USERNAME_REQUIRED = "Username is required"

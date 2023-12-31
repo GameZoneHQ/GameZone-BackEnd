@@ -1,9 +1,10 @@
 package com.mobilebreakero.utils
 
-import com.mobilebreakero.response.ApiResponse
+import com.mobilebreakero.exceptions.response.ApiResponse
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 
 fun isValidPassword(password: String): Boolean {
     return password.matches(Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@\$!%*?&])[A-Za-z\\d@$!%*?&]{6,}$"))
@@ -23,3 +24,5 @@ fun <T> successResponse(data: T): ResponseEntity<ApiResponse<T>> {
 
 @Value("\${app.jwt.expiration-in-ms}")
 var jwtExpirationInMs: Long = 86400000
+
+

@@ -1,14 +1,15 @@
 package com.mobilebreakero.controllers
 
-import com.mobilebreakero.dtos.LoginDTO
-import com.mobilebreakero.dtos.RegisterDTO
+import com.mobilebreakero.dtos.*
 import com.mobilebreakero.exceptions.EmailAlreadyExistsException
 import com.mobilebreakero.exceptions.EmailAlreadyExistsExceptionDataIntegrity
 import com.mobilebreakero.exceptions.GlobalException
 import com.mobilebreakero.exceptions.UsernameAlreadyExistsException
-import com.mobilebreakero.models.UsersModel
-import com.mobilebreakero.response.ApiResponseMessages
+import com.mobilebreakero.exceptions.response.ApiResponseMessages
 import com.mobilebreakero.services.UserService
+import com.mobilebreakero.services.apiDeveloper.ApiDeveloperAuthService
+import com.mobilebreakero.services.gameDeveloper.GameDeveloperAuthService
+import com.mobilebreakero.services.player.PlayerAuthService
 import com.mobilebreakero.utils.*
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
@@ -24,7 +25,10 @@ import java.util.*
 @RestController
 @RequestMapping("/api")
 class AuthController @Autowired constructor(
-    private val userService: UserService
+    private val userService: UserService,
+    private val apiDeveloperAuthService: ApiDeveloperAuthService,
+    private val gameDeveloperAuthService: GameDeveloperAuthService,
+    private val playerAuthService: PlayerAuthService,
 ) {
 
     @PostMapping("/register")
@@ -79,8 +83,8 @@ class AuthController @Autowired constructor(
         return errorResponse<Any>(ApiResponseMessages.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)
     }
 
-    @PostMapping("/login")
-    fun login(@RequestBody body: LoginDTO, response: HttpServletResponse): Any {
+    @PostMapping("/game_developer/login")
+    fun gameDeveloperLogin(@RequestBody body: GameDeveloperLoginDTO, response: HttpServletResponse): Any {
 
         if (body.username.isNullOrBlank() && body.password.isNullOrBlank()) {
             return errorResponse<Any>(ApiResponseMessages.INCORRECT_EMAIL_OR_PASSWORD, HttpStatus.BAD_REQUEST)
@@ -90,7 +94,7 @@ class AuthController @Autowired constructor(
             return errorResponse<Any>(ApiResponseMessages.EMAIL_REQUIRED, HttpStatus.BAD_REQUEST)
         }
 
-        val user = body.username.let { this.userService.login(it) }
+        val user = body.username.let { this.gameDeveloperAuthService.login(it) }
             ?: return errorResponse<Any>(ApiResponseMessages.EMAIL_NOT_FOUND, HttpStatus.NOT_FOUND)
 
         if (body.password.isNullOrBlank()) {
@@ -113,7 +117,81 @@ class AuthController @Autowired constructor(
 
         response.addCookie(cookie)
 
-        return successResponse(user)
+        return successResponse(user.username)
+    }
+
+    @PostMapping("/api_developer/login")
+    fun apiDeveloperLogin(@RequestBody body: ApiDeveloperLoginDTO, response: HttpServletResponse): Any {
+
+        if (body.email.isNullOrBlank() && body.password.isNullOrBlank()) {
+            return errorResponse<Any>(ApiResponseMessages.INCORRECT_EMAIL_OR_PASSWORD, HttpStatus.BAD_REQUEST)
+        }
+
+        if (body.email.isNullOrBlank()) {
+            return errorResponse<Any>(ApiResponseMessages.EMAIL_REQUIRED, HttpStatus.BAD_REQUEST)
+        }
+
+        val user = body.email.let { this.apiDeveloperAuthService.login(it) }
+            ?: return errorResponse<Any>(ApiResponseMessages.EMAIL_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+        if (body.password.isNullOrBlank()) {
+            return errorResponse<Any>(ApiResponseMessages.PASSWORD_REQUIRED, HttpStatus.BAD_REQUEST)
+        }
+
+        if (!user.matchPassword(body.password)) {
+            return errorResponse<Any>(ApiResponseMessages.INVALID_PASSWORD, HttpStatus.BAD_REQUEST)
+        }
+
+        val issuer = user.id.toString()
+
+        val jwt = Jwts.builder()
+            .setIssuer(issuer)
+            .setExpiration(Date(System.currentTimeMillis() + jwtExpirationInMs))
+            .signWith(SignatureAlgorithm.HS512, "secret").compact()
+
+        val cookie = Cookie("jwt", jwt)
+        cookie.isHttpOnly = true
+
+        response.addCookie(cookie)
+
+        return successResponse(user.email)
+    }
+
+    @PostMapping("/player/login")
+    fun playerLogin(@RequestBody body: PlayerLoginDTO, response: HttpServletResponse): Any {
+
+        if (body.username.isNullOrBlank() && body.password.isNullOrBlank()) {
+            return errorResponse<Any>(ApiResponseMessages.INCORRECT_EMAIL_OR_PASSWORD, HttpStatus.BAD_REQUEST)
+        }
+
+        if (body.username.isNullOrBlank()) {
+            return errorResponse<Any>(ApiResponseMessages.EMAIL_REQUIRED, HttpStatus.BAD_REQUEST)
+        }
+
+        val user = body.username.let { this.playerAuthService.login(it) }
+            ?: return errorResponse<Any>(ApiResponseMessages.EMAIL_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+        if (body.password.isNullOrBlank()) {
+            return errorResponse<Any>(ApiResponseMessages.PASSWORD_REQUIRED, HttpStatus.BAD_REQUEST)
+        }
+
+        if (!user.matchPassword(body.password)) {
+            return errorResponse<Any>(ApiResponseMessages.INVALID_PASSWORD, HttpStatus.BAD_REQUEST)
+        }
+
+        val issuer = user.id.toString()
+
+        val jwt = Jwts.builder()
+            .setIssuer(issuer)
+            .setExpiration(Date(System.currentTimeMillis() + jwtExpirationInMs))
+            .signWith(SignatureAlgorithm.HS512, "secret").compact()
+
+        val cookie = Cookie("jwt", jwt)
+        cookie.isHttpOnly = true
+
+        response.addCookie(cookie)
+
+        return successResponse(user.Username)
     }
 
 }

@@ -1,6 +1,5 @@
 package com.mobilebreakero.models
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 
@@ -25,4 +24,8 @@ data class PlayerModel(
 
     @Column(updatable = true, name = "Age")
     var age: Int = 0
-)
+) {
+    fun matchPassword(password: String): Boolean {
+        return BCryptPasswordEncoder().matches(password, this.Password)
+    }
+}

@@ -1,12 +1,12 @@
 package com.mobilebreakero.services
 
-import com.mobilebreakero.models.DeveloperModel
+import com.mobilebreakero.models.ApiDeveloperModel
+import com.mobilebreakero.models.GameDeveloperModel
 import com.mobilebreakero.models.PlayerModel
 import com.mobilebreakero.models.UserType
-import com.mobilebreakero.models.UsersModel
-import com.mobilebreakero.repositories.DeveloperRepository
-import com.mobilebreakero.repositories.PlayerRepository
-import com.mobilebreakero.repositories.UserRepository
+import com.mobilebreakero.repositories.apiDeveloper.auth.ApiDeveloperRepository
+import com.mobilebreakero.repositories.gameDeveloper.auth.GameDeveloperRepository
+import com.mobilebreakero.repositories.player.auth.PlayerRepository
 import com.mobilebreakero.utils.errorResponse
 import com.mobilebreakero.utils.successResponse
 import org.springframework.beans.factory.annotation.Autowired
@@ -17,9 +17,9 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class UserService @Autowired constructor(
-    private val userRepository: UserRepository,
     private val playerRepository: PlayerRepository,
-    private val developerRepository: DeveloperRepository
+    private val apiDeveloperRepository: ApiDeveloperRepository,
+    private val gameDeveloperRepository: GameDeveloperRepository
 ) {
 
     @Transactional
@@ -27,13 +27,13 @@ class UserService @Autowired constructor(
         try {
             when (userType) {
 
-                UserType.DEVELOPER -> {
-                    val developerModel = DeveloperModel(
+                UserType.API_DEVELOPER -> {
+                    val apiDeveloperModel = ApiDeveloperModel(
                         username = username,
                         email = email,
                         password = password
                     )
-                    developerRepository.save(developerModel)
+                    apiDeveloperRepository.save(apiDeveloperModel)
                 }
 
                 UserType.PLAYER -> {
@@ -44,16 +44,20 @@ class UserService @Autowired constructor(
                     )
                     playerRepository.save(playerModel)
                 }
+
+                UserType.GAME_DEVELOPER -> {
+                    val gameDeveloperModel = GameDeveloperModel(
+                        username = username,
+                        email = email,
+                        password = password
+                    )
+                    gameDeveloperRepository.save(gameDeveloperModel)
+                }
             }
             return successResponse("Registration successful")
         } catch (e: Exception) {
             return errorResponse<Any>("Registration failed: ${e.message}", HttpStatus.INTERNAL_SERVER_ERROR)
         }
-    }
-
-
-    fun login(email: String): UsersModel? {
-        return this.userRepository.findByEmail(email)
     }
 
 }
