@@ -16,6 +16,7 @@ import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.web.bind.annotation.*
 import java.util.*
 
@@ -38,22 +39,24 @@ class AuthController @Autowired constructor(
         } else if (!isValidPassword(body.password)) {
             return errorResponse<Any>(ApiResponseMessages.INVALID_PASSWORD_FORMAT, HttpStatus.BAD_REQUEST)
         }
-
+        if (body.userType == null) {
+            return errorResponse<Any>(ApiResponseMessages.USER_TYPE_REQUIRED, HttpStatus.BAD_REQUEST)
+        }
         if (body.email.isNullOrBlank()) {
             return errorResponse<Any>(ApiResponseMessages.EMAIL_REQUIRED, HttpStatus.BAD_REQUEST)
         } else if (!isValidEmail(body.email)) {
             return errorResponse<Any>(ApiResponseMessages.INVALID_EMAIL_FORMAT, HttpStatus.BAD_REQUEST)
         }
-
-        val usersModel = UsersModel().apply {
-            Username = body.username
-            Password = body.password
-            email = body.email
-        }
+        val password = BCryptPasswordEncoder().encode(body.password)
 
         try {
-            userService.register(usersModel)
-            return successResponse(usersModel)
+            userService.register(
+                userType = body.userType,
+                username = body.username,
+                email = body.email,
+                password = password
+            )
+            return successResponse(body.email)
         } catch (e: UsernameAlreadyExistsException) {
             return errorResponse<Any>(ApiResponseMessages.USERNAME_ALREADY_EXISTS, HttpStatus.CONFLICT)
         } catch (e: EmailAlreadyExistsException) {
@@ -79,7 +82,7 @@ class AuthController @Autowired constructor(
     @PostMapping("/login")
     fun login(@RequestBody body: LoginDTO, response: HttpServletResponse): Any {
 
-        if(body.username.isNullOrBlank() && body.password.isNullOrBlank()) {
+        if (body.username.isNullOrBlank() && body.password.isNullOrBlank()) {
             return errorResponse<Any>(ApiResponseMessages.INCORRECT_EMAIL_OR_PASSWORD, HttpStatus.BAD_REQUEST)
         }
 

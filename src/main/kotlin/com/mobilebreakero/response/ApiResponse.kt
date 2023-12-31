@@ -10,6 +10,7 @@ sealed class ApiResponse<T>(val message: String, val status: HttpStatus) {
 object ApiResponseMessages {
     val USERNAME_REQUIRED = "Username is required"
     val PASSWORD_REQUIRED = "Password is required"
+    val USER_TYPE_REQUIRED = "UserType is required"
     val INVALID_PASSWORD_FORMAT =
         "Invalid password format (min 6 characters, at least 1 uppercase, 1 lowercase, 1 number)"
     val EMAIL_REQUIRED = "Email is required"
